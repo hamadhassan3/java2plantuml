@@ -3,6 +3,7 @@ package org.example;
 import com.github.javaparser.ParseResult;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.type.Type;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import com.github.javaparser.utils.SourceRoot;
@@ -24,10 +25,9 @@ public class Main {
      * The sub-folders in the application to be parsed.
      */
     private static final String[] subFolders = {
-            "client",
-            "client_helper",
-            "constant",
-            "exception"
+            "controllers",
+            "models/repositories",
+            "services"
     };
 
     /**
@@ -104,7 +104,7 @@ public class Main {
 
                         extendedTypeName = matcher.group(1) + "_" + genericType;
 
-                        namePrefix.append(matcher.group(2)).append("_");
+                        namePrefix.append(genericType).append("_");
                     }
 
                     // Adding the extended types to the list.
@@ -161,10 +161,10 @@ public class Main {
             }));
 
             // Getting the methods for the class/interface.
-            classDeclaration.getMethods().forEach(method -> plantUMLCode.append("\t").append("+ ").append(
-                    method.getModifiers().stream().anyMatch(
-                            (modifier -> {System.out.println(modifier); return modifier.toString().trim()
-                                    .equals("static");})) ? "{static} " : "").append(method.getDeclarationAsString(false, false, false)).append("\n"));
+            classDeclaration.getMethods().forEach(method -> plantUMLCode.append("\t").append("+ ")
+                    .append(isMethodStatic(method) ? "{static} " : "")
+                    .append(method.getDeclarationAsString(false, false, false))
+                    .append("\n"));
 
             plantUMLCode.append("}\n");
 
@@ -174,6 +174,18 @@ public class Main {
 
             super.visit(classDeclaration, arg);
         }
+    }
+
+    /**
+     * This method checks if the method is static or not.
+     *
+     * @param method The method to be checked.
+     * @return True if the method is static, false otherwise.
+     */
+    private static boolean isMethodStatic(MethodDeclaration method) {
+        return method.getModifiers().stream().anyMatch(
+                (modifier -> modifier.toString().trim()
+                        .equals("static")));
     }
 
     /**
@@ -286,6 +298,8 @@ public class Main {
     }
 
     public static void main(String[] args) {
+
+        // Extracting source directory path from the command line arguments.
         if (args.length != 1) {
             System.out.println("Usage: ./javaCodeDirectoryParser <directory_path>");
             System.exit(1);
@@ -293,6 +307,7 @@ public class Main {
 
         String directoryPath = args[0];
 
+        // Converting the code at the source into plantuml code.
         parseDirectory(directoryPath);
 
         // Specify the output file path
